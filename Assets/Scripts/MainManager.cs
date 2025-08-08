@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static UIHandler;
 
 public class MainManager : MonoBehaviour
 {
@@ -37,6 +39,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        if (!string.IsNullOrEmpty(GameMananger.Instance.HighScorePlayerName))
+            SetMaxScore(true);
     }
 
     private void Update()
@@ -63,23 +68,66 @@ public class MainManager : MonoBehaviour
         }
     }
 
+    private void OnApplicationQuit()
+    {
+        Debug.Log("Salvou os dados.");
+        SaveData();
+    }
+
+
+    private void WriteFile()
+    {
+        PlayerData data = new PlayerData
+        {
+            name = GameMananger.Instance.Name,
+            score = GameMananger.Instance.Score
+        };
+
+        string json = JsonUtility.ToJson(data);
+
+        string path = Path.Combine(Application.persistentDataPath, "data.json");
+
+        File.WriteAllText(path, json);
+    }
+
+    private void SaveData()
+    {
+        var player = UIHandler.GetPlayerData();
+
+        if (player == null)
+            WriteFile();
+        else if (player != null && GameMananger.Instance.Score > player.score)
+            WriteFile();
+    }
+
     void AddPoint(int point)
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
     }
 
-    void SetNewRecordScore()
+
+    void SetMaxScore(bool isNewGame)
     {
-        GameMananger.Instance.Score = m_Points;
-        NewRecordScoreText.text = $"Best Score : {GameMananger.Instance.Name} : {GameMananger.Instance.Score}";
+        if (isNewGame)
+        {
+            NewRecordScoreText.text = $"Best Score : {GameMananger.Instance.HighScorePlayerName} : {GameMananger.Instance.HighScore}";
+        } else
+        {
+            GameMananger.Instance.Score = m_Points;
+
+            GameMananger.Instance.HighScore = m_Points;
+            GameMananger.Instance.HighScorePlayerName = GameMananger.Instance.Name;
+
+            NewRecordScoreText.text = $"Best Score : {GameMananger.Instance.Name} : {GameMananger.Instance.Score}";
+        }
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
-        if (m_Points > GameMananger.Instance.Score)
-            SetNewRecordScore();   
+        if (m_Points > GameMananger.Instance.HighScore)
+            SetMaxScore(false);   
     }
 }

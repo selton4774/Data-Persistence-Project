@@ -5,6 +5,10 @@ public class GameMananger : MonoBehaviour
 {
     public int Score;
     public string Name;
+
+    public int HighScore;
+    public string HighScorePlayerName;
+
     public static GameMananger Instance;
 
     private void Awake()
